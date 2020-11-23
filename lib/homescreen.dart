@@ -1,4 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+class APIservice {
+  static const apikey = 'ee98872aefmsh6569140441850f9p1f6f0djsn2d0353056515';
+  static const baseURl =
+      'https://twinword-twinword-bundle-v1.p.rapidapi.com/word_associations/';
+  static const Map<String, String> header = {
+    "content-type": "application/x-www-form-urlencoded",
+    "x-rapidapi-key": apikey,
+    "x-rapidapi-host": "twinword-twinword-bundle-v1.p.rapidapi.com",
+    "useQueryString": "true",
+  };
+
+  Future<SentAna> post({@required Map<String, String> query}) async {
+    final response = await http.post(baseURl, headers: header, body: query);
+
+    if (response.statusCode == 200) {
+      print('Success' + response.body);
+      return SentAna.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load data');
+    }
+  }
+}
+
+class SentAna {
+  final String emotions;
+  SentAna({this.emotions});
+
+  factory SentAna.fromJson(Map<String, dynamic> json) {
+    return SentAna(emotions: json['emotions_detected'][0]);
+  }
+}
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -8,6 +42,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
   final mycontroller = TextEditingController();
+
+  APIservice apiservice = APIservice();
+  Future<SentAna> analysis;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,16 +105,71 @@ class _HomeScreenState extends State<HomeScreen> {
                                         fontWeight: FontWeight.w600,
                                       ),
                                       decoration: InputDecoration(
-                                        labelStyle: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 21,
-                                        ),
-                                      ),
+                                          labelStyle: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 21,
+                                          ),
+                                          labelText: 'Enter a search term'),
                                     ),
+                                    SizedBox(height: 30),
                                   ],
                                 ),
                               )
                             : Container(),
+                      ),
+                    ),
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      child: Column(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                // _loading = false;
+                                print(mycontroller.text);
+                                analysis = apiservice
+                                    .post(query: {'text': mycontroller.text});
+                              });
+                            },
+                            child: Container(
+                              width: MediaQuery.of(context).size.width - 180,
+                              alignment: Alignment.center,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 17,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Color(0xff56ab2f),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Find Emotions',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          FutureBuilder<SentAna>(
+                            future: analysis,
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                return Text(
+                                  'Predection is : ' + snapshot.data.emotions,
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 29.0,
+                                  ),
+                                );
+                              } else if (snapshot.hasError) {
+                                return Text('${snapshot.error}');
+                              }
+                              return CircularProgressIndicator();
+                            },
+                          ),
+                        ],
                       ),
                     )
                   ],
@@ -89,3 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+// BKscdk080#
+
+// @Pxjkks910
